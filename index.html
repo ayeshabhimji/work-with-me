@@ -15,6 +15,9 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Start talking to Tally straight away so the form arrives as fast as possible -->
+  <link rel="preconnect" href="https://tally.so">
+  <script async src="https://tally.so/widgets/embed.js" onload="window.Tally && window.Tally.loadEmbeds()"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
@@ -198,7 +201,7 @@
       <iframe
         data-tally-src="https://tally.so/embed/OQ7pjg?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
         width="100%" height="1300" frameborder="0" marginheight="0" marginwidth="0"
-        title="Discovery call inquiry form" hidden></iframe>
+        title="Discovery call inquiry form"></iframe>
       <noscript>
         <p class="form-fallback"><a href="https://tally.so/r/OQ7pjg">Open the inquiry form</a></p>
       </noscript>
@@ -219,21 +222,23 @@
       var frame = document.querySelector('iframe[data-tally-src]');
       var placeholder = document.getElementById('tally-placeholder');
       if (!frame) return;
+      // Tally's helper script (loaded at the top of the page) fills in the form and resizes the box to fit it.
       // Keep the "Loading" message on screen until the form has actually arrived.
-      frame.addEventListener('load', function () {
-        if (!frame.getAttribute('src')) return;
-        frame.hidden = false;
+      function formArrived() {
         if (placeholder) { placeholder.remove(); placeholder = null; }
+      }
+      window.addEventListener('message', function (e) {
+        if (e.origin === 'https://tally.so' && typeof e.data === 'string' && e.data.indexOf('Tally.FormLoaded') !== -1) formArrived();
       });
-      // Tally's helper script loads the form and resizes the box to fit it, so there's no scrolling inside a box.
-      var s = document.createElement('script');
-      s.src = 'https://tally.so/widgets/embed.js';
-      s.onload = function () { if (window.Tally) window.Tally.loadEmbeds(); };
-      document.body.appendChild(s);
-      // Back-up plan: if the helper script hasn't loaded the form within 4 seconds, load it directly.
+      frame.addEventListener('load', function () {
+        if (frame.getAttribute('src')) formArrived();
+      });
+      // If the helper script finished before the form box existed, ask it to fill the box now.
+      if (window.Tally) window.Tally.loadEmbeds();
+      // Back-up plan: if the helper script is blocked or slow, load the form directly after 3 seconds.
       setTimeout(function () {
         if (!frame.getAttribute('src')) frame.src = frame.dataset.tallySrc;
-      }, 4000);
+      }, 3000);
     })();
   </script>
 </body>
