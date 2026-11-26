@@ -230,7 +230,14 @@
         if (placeholder) { placeholder.remove(); placeholder = null; }
       }
       window.addEventListener('message', function (e) {
-        if (e.origin === 'https://tally.so' && typeof e.data === 'string' && e.data.indexOf('Tally.FormLoaded') !== -1) formArrived();
+        if (e.origin !== 'https://tally.so' || typeof e.data !== 'string') return;
+        if (e.data.indexOf('Tally.FormLoaded') !== -1) formArrived();
+        // Once they've submitted, hide the "Tell me a bit about you" intro so the thank-you message stands on its own.
+        if (e.data.indexOf('Tally.FormSubmitted') !== -1) {
+          document.querySelector('h1').hidden = true;
+          document.querySelector('.intro').hidden = true;
+          window.scrollTo(0, 0);
+        }
       });
       frame.addEventListener('load', function () {
         if (frame.getAttribute('src')) formArrived();
